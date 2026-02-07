@@ -45,7 +45,7 @@ const NutritionForm: React.FC<NutritionFormProps> = ({ onSubmit, isLoading }) =>
     <section id="nutrition-form" className="py-24 bg-zinc-900/50 scroll-mt-20">
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter italic text-white">NUTRICIÓN <span className="text-red-500">FORZA</span></h2>
+          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter italic text-white">ESTRATEGIA <span className="text-red-500">FORZA CANGAS</span></h2>
           <p className="text-zinc-500 mt-4 uppercase text-xs font-black tracking-widest">Algoritmo de rendimiento metabólico avanzado</p>
         </div>
 
@@ -99,7 +99,7 @@ const NutritionForm: React.FC<NutritionFormProps> = ({ onSubmit, isLoading }) =>
             disabled={isLoading}
             className={`w-full py-6 ${isLoading ? 'bg-zinc-700' : 'bg-red-500 hover:bg-red-600'} text-white font-black rounded-2xl text-xl transition-all transform hover:scale-[1.01] shadow-2xl uppercase italic tracking-tighter flex items-center justify-center gap-4`}
           >
-            {isLoading ? 'ANALIZANDO BIOMETRÍA...' : 'GENERAR PLAN FORZA FUEL'}
+            {isLoading ? 'ANALIZANDO BIOMETRÍA...' : 'GENERAR PLAN FORZA CANGAS NUTRITION'}
           </button>
         </form>
       </div>

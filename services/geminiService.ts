@@ -2,7 +2,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserData, NutritionPlan, QuestionnaireData } from "../types";
 
-// Inicialización estricta usando process.env.API_KEY
+// Always use process.env.API_KEY exclusively for the API key as per guidelines.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
@@ -37,7 +37,7 @@ export const generateNutritionPlan = async (
   const systemInstruction = `Eres el Nutricionista Jefe de Forza Cangas Nutrition. 
   Tu misión es generar planes de alimentación basados en DATOS MATEMÁTICOS EXACTOS.
   REGLA DE ORO: El total de calorías diario DEBE ser exactamente ${tdee}.
-  IMPORTANTE: Todos los valores numéricos de macronutrientes y calorías deben ser números ENTEROS, sin decimales.`;
+  IMPORTANTE: Todos los valores numéricos de macronutrientes y calorías deben ser números ENTEROS, sin decimales. ABSOLUTAMENTE NINGÚN DECIMAL.`;
 
   const prompt = `GENERAR PROTOCOLO NUTRICIONAL ELITE:
   - TDEE CALCULADO (FIJO): ${tdee} kcal
@@ -48,12 +48,13 @@ export const generateNutritionPlan = async (
   REGLAS PARA EL JSON:
   1. dailyTotals.calories = ${tdee}.
   2. Suma de macros.calories de las comidas = ${tdee}.
-  3. Todos los valores (protein, carbs, fats, calories) deben ser números ENTEROS.
+  3. Todos los valores (protein, carbs, fats, calories) deben ser números ENTEROS redondeados.
   4. Proporciona nombres de platos realistas con ingredientes.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      // Use gemini-3-pro-preview for complex reasoning and mathematical constraints
+      model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
         systemInstruction,
