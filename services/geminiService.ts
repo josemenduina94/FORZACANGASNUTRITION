@@ -7,7 +7,7 @@ import { UserData, NutritionPlan, QuestionnaireData } from "../types";
  * exclusively from the environment variable process.env.API_KEY.
  * This also fixes the TypeError where import.meta.env was undefined.
  */
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
 /**
  * Fórmula de Harris-Benedict (Revisión de Roza y Shizgal, 1984)
