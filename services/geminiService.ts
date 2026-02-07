@@ -2,11 +2,18 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserData, NutritionPlan, QuestionnaireData } from "../types";
 
-/**
- * De acuerdo con las directrices obligatorias, la clave API debe obtenerse
- * exclusivamente de process.env.API_KEY para asegurar la conectividad en este entorno.
- */
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+import { GoogleGenAI, Type } from "@google/genai";
+import { UserData, NutritionPlan, QuestionnaireData } from "../types";
+
+const apiKey =
+  (globalThis as any).__GEMINI_API_KEY__ ||
+  (import.meta as any)?.env?.VITE_GEMINI_API_KEY;
+
+if (!apiKey) {
+  throw new Error("❌ Gemini API Key no definida en entorno browser");
+}
+
+const ai = new GoogleGenAI({ apiKey });
 
 /**
  * Fórmula de Harris-Benedict (Revisión de Roza y Shizgal, 1984)
