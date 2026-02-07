@@ -3,19 +3,18 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { UserData, NutritionPlan, QuestionnaireData } from "../types";
 
 /**
- * According to Google GenAI SDK guidelines, the API key must be obtained
- * exclusively from the environment variable process.env.API_KEY.
- * This also fixes the TypeError where import.meta.env was undefined.
+ * De acuerdo con las directrices obligatorias, la clave API debe obtenerse
+ * exclusivamente de process.env.API_KEY para asegurar la conectividad en este entorno.
  */
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
  * Fórmula de Harris-Benedict (Revisión de Roza y Shizgal, 1984)
- * Hombre: BMR = 88.362 + (13.397 × peso) + (4.799 × altura) - (5.677 × edad)
- * Mujer: BMR = 447.593 + (9.247 × peso) + (3.098 × altura) - (4.330 × edad)
+ * Calcula la Tasa Metabólica Basal y aplica el factor de actividad y objetivo.
  */
 export const calculateTDEE = (data: UserData): number => {
   let bmr: number;
+  // Harris-Benedict revisada
   if (data.gender === 'masculino') {
     bmr = 88.362 + (13.397 * data.weight) + (4.799 * data.height) - (5.677 * data.age);
   } else {
@@ -36,27 +35,30 @@ export const generateNutritionPlan = async (
   userData: UserData, 
   healthData: QuestionnaireData
 ): Promise<NutritionPlan> => {
-  const tdee = Math.round(calculateTDEE(userData));
+  const tdee = calculateTDEE(userData);
   
   const systemInstruction = `Eres el Nutricionista Jefe de Forza Cangas Nutrition. 
-  Tu misión es generar planes de alimentación basados en DATOS MATEMÁTICOS EXACTOS.
+  Tu misión es generar planes de alimentación basados en DATOS MATEMÁTICOS EXACTOS para atletas de élite.
   REGLA DE ORO: El total de calorías diario DEBE ser exactamente ${tdee}.
-  IMPORTANTE: Todos los valores numéricos de macronutrientes y calorías deben ser números ENTEROS, sin decimales. ABSOLUTAMENTE NINGÚN DECIMAL.`;
+  IMPORTANTE: Todos los valores numéricos de macronutrientes y calorías deben ser números ENTEROS (redondeados), sin decimales. ABSOLUTAMENTE NINGÚN DECIMAL.
+  Usa un tono profesional, motivador y directo.`;
 
-  const prompt = `GENERAR PROTOCOLO NUTRICIONAL ELITE:
-  - TDEE CALCULADO (FIJO): ${tdee} kcal
-  - Objetivo: ${userData.goal}
+  const prompt = `GENERAR PROTOCOLO NUTRICIONAL ELITE PARA EL SIGUIENTE PERFIL:
+  - TDEE CALCULADO (OBJETIVO): ${tdee} kcal
+  - Objetivo del Atleta: ${userData.goal}
+  - Peso: ${userData.weight}kg, Altura: ${userData.height}cm, Edad: ${userData.age}
   - Número de Comidas: ${userData.mealCount}
-  - Perfil Metabólico: Estrés ${healthData.stressLevel}, Sueño ${healthData.sleepQuality}.
+  - Estrés percibido: ${healthData.stressLevel}, Calidad de sueño: ${healthData.sleepQuality}
   
-  REGLAS PARA EL JSON:
-  1. dailyTotals.calories = ${tdee}.
-  2. Suma de macros.calories de las comidas = ${tdee}.
-  3. Todos los valores (protein, carbs, fats, calories) deben ser números ENTEROS redondeados.
-  4. Proporciona nombres de platos realistas con ingredientes.`;
+  REGLAS ESTRICTAS PARA EL JSON:
+  1. dailyTotals.calories DEBE ser exactamente ${tdee}.
+  2. La suma de las calorías de todas las comidas DEBE ser igual a ${tdee}.
+  3. No uses decimales en ningún valor numérico de macros o calorías.
+  4. Nombres de platos realistas (gastronomía saludable) con descripción de ingredientes.`;
 
   try {
     const response = await ai.models.generateContent({
+      // Usamos el modelo Pro para tareas complejas de razonamiento nutricional y matemático
       model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
@@ -107,9 +109,12 @@ export const generateNutritionPlan = async (
       },
     });
 
-    const plan = JSON.parse(response.text || '{}') as NutritionPlan;
+    const planText = response.text;
+    if (!planText) throw new Error("La IA no devolvió contenido.");
     
-    // Sobreescritura de seguridad para garantizar coherencia matemática y sin decimales
+    const plan = JSON.parse(planText) as NutritionPlan;
+    
+    // Post-procesamiento de seguridad para garantizar coherencia absoluta y ausencia de decimales
     plan.dailyTotals.calories = Math.round(tdee);
     plan.dailyTotals.tdee = Math.round(tdee);
     plan.dailyTotals.protein = Math.round(plan.dailyTotals.protein);
@@ -128,7 +133,7 @@ export const generateNutritionPlan = async (
     
     return plan;
   } catch (error) {
-    console.error("Error en la generación del plan nutricional:", error);
+    console.error("Error crítico en la conexión con Gemini:", error);
     throw error;
   }
 };
