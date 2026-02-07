@@ -1,10 +1,9 @@
 // services/geminiService.ts
-import { GoogleGenerativeAI, Type } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { UserData, NutritionPlan, QuestionnaireData } from "../types";
 
 /**
- * API KEY inyectada por Vercel
- * Debe definirse en Vercel como VITE_GEMINI_API_KEY
+ * API Key inyectada por Vercel
  */
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 if (!apiKey) throw new Error("VITE_GEMINI_API_KEY no está definida");
@@ -12,7 +11,7 @@ if (!apiKey) throw new Error("VITE_GEMINI_API_KEY no está definida");
 /**
  * Cliente Gemini para navegador
  */
-const ai = new GoogleGenerativeAI({ apiKey });
+const ai = new GoogleGenAI({ apiKey });
 
 /**
  * Harris-Benedict (Roza & Shizgal, 1984)
@@ -57,10 +56,8 @@ Genera un plan nutricional para:
 `;
 
   try {
-    // Crear modelo generativo compatible con navegador
     const model = ai.getGenerativeModel({ model: "gemini-1.5-pro", systemInstruction });
 
-    // Llamada al modelo
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
@@ -83,10 +80,10 @@ Genera un plan nutricional para:
                       fats: { type: Type.NUMBER },
                       calories: { type: Type.NUMBER }
                     },
-                    required: ["protein", "carbs", "fats", "calories"]
+                    required: ["protein","carbs","fats","calories"]
                   }
                 },
-                required: ["name", "description", "macros"]
+                required: ["name","description","macros"]
               }
             },
             dailyTotals: {
@@ -98,11 +95,11 @@ Genera un plan nutricional para:
                 calories: { type: Type.NUMBER },
                 tdee: { type: Type.NUMBER }
               },
-              required: ["protein", "carbs", "fats", "calories", "tdee"]
+              required: ["protein","carbs","fats","calories","tdee"]
             },
             recommendations: { type: Type.ARRAY, items: { type: Type.STRING } }
           },
-          required: ["meals", "dailyTotals", "recommendations"]
+          required: ["meals","dailyTotals","recommendations"]
         }
       }
     });
@@ -110,7 +107,7 @@ Genera un plan nutricional para:
     const text = await result.response.text();
     const plan = JSON.parse(text) as NutritionPlan;
 
-    // Seguridad final: redondear todos los valores
+    // Redondeo final de macros y calorías
     plan.dailyTotals.calories = tdee;
     plan.dailyTotals.tdee = tdee;
     plan.meals = plan.meals.map(m => ({
