@@ -4,7 +4,7 @@ import { NutritionPlan, Meal } from '../types';
 import { Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
-interface ForzaFuelProps {
+interface ForzaCangasNutritionProps {
   plan: NutritionPlan | null;
   isLoading: boolean;
 }
@@ -48,22 +48,22 @@ const MealCard: React.FC<{ meal: Meal; index: number }> = ({ meal, index }) => {
       <div className="p-8">
         <div className="flex justify-between items-start mb-6">
           <h3 className="text-xs font-black uppercase tracking-widest text-red-500 italic">Comida {index + 1}</h3>
-          <span className="text-xl font-black italic text-white">{Number(meal.macros.calories).toFixed(1)} <span className="text-[10px] text-zinc-500 uppercase">kcal</span></span>
+          <span className="text-xl font-black italic text-white">{Math.round(meal.macros.calories)} <span className="text-[10px] text-zinc-500 uppercase">kcal</span></span>
         </div>
         <h4 className="text-2xl font-black mb-4 text-white uppercase italic leading-tight">{meal.name}</h4>
         <p className="text-zinc-400 text-sm mb-8 flex-grow leading-relaxed font-medium italic border-l border-white/10 pl-4">{meal.description}</p>
         <div className="grid grid-cols-3 gap-3 border-t border-white/5 pt-8">
           <div className="text-center p-3 bg-white/5 rounded-2xl border border-white/5 group-hover:bg-red-500/5 transition-colors">
             <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">PROT</p>
-            <p className="text-lg font-black text-white">{Number(meal.macros.protein).toFixed(1)}g</p>
+            <p className="text-lg font-black text-white">{Math.round(meal.macros.protein)}g</p>
           </div>
           <div className="text-center p-3 bg-white/5 rounded-2xl border border-white/5 group-hover:bg-red-500/5 transition-colors">
             <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">CARB</p>
-            <p className="text-lg font-black text-white">{Number(meal.macros.carbs).toFixed(1)}g</p>
+            <p className="text-lg font-black text-white">{Math.round(meal.macros.carbs)}g</p>
           </div>
           <div className="text-center p-3 bg-white/5 rounded-2xl border border-white/5 group-hover:bg-red-500/5 transition-colors">
             <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">GRAS</p>
-            <p className="text-lg font-black text-white">{Number(meal.macros.fats).toFixed(1)}g</p>
+            <p className="text-lg font-black text-white">{Math.round(meal.macros.fats)}g</p>
           </div>
         </div>
       </div>
@@ -71,17 +71,17 @@ const MealCard: React.FC<{ meal: Meal; index: number }> = ({ meal, index }) => {
   );
 };
 
-const ForzaFuel: React.FC<ForzaFuelProps> = ({ plan, isLoading }) => {
+const ForzaCangasNutrition: React.FC<ForzaCangasNutritionProps> = ({ plan, isLoading }) => {
   const exportPDF = () => {
     if (!plan) return;
     const doc = new jsPDF();
     doc.setFontSize(22);
     doc.text("FORZA CANGAS NUTRITION - PLAN PERSONALIZADO", 10, 20);
     doc.setFontSize(14);
-    doc.text(`Calorías Totales: ${Number(plan.dailyTotals.calories).toFixed(1)} kcal`, 10, 40);
+    doc.text(`Calorías Totales: ${Math.round(plan.dailyTotals.calories)} kcal`, 10, 40);
     
     plan.meals.forEach((meal, i) => {
-        doc.text(`${i+1}. ${meal.name} (${Number(meal.macros.calories).toFixed(1)} kcal)`, 10, 60 + (i * 10));
+        doc.text(`${i+1}. ${meal.name} (${Math.round(meal.macros.calories)} kcal)`, 10, 60 + (i * 10));
     });
     doc.save(`Forza_Cangas_Nutrition_Plan_${new Date().getTime()}.pdf`);
   };
@@ -109,7 +109,7 @@ const ForzaFuel: React.FC<ForzaFuelProps> = ({ plan, isLoading }) => {
         {isLoading ? (
           <div className="py-24 flex flex-col items-center justify-center bg-zinc-900/50 rounded-[2.5rem] border border-white/5">
             <div className="w-20 h-20 border-4 border-red-500/10 border-t-red-500 rounded-full animate-spin mb-8"></div>
-            <p className="text-zinc-500 font-black uppercase tracking-[0.3em] italic animate-pulse text-center px-4">Sincronizando con base de datos de Forza Cangas...</p>
+            <p className="text-zinc-500 font-black uppercase tracking-[0.3em] italic animate-pulse text-center px-4">Sincronizando con la red Forza Cangas...</p>
           </div>
         ) : plan ? (
           <div className="space-y-16">
@@ -122,7 +122,7 @@ const ForzaFuel: React.FC<ForzaFuelProps> = ({ plan, isLoading }) => {
                ].map((item, i) => (
                  <div key={i} className="bg-zinc-900 p-8 rounded-[2.5rem] border border-white/5 text-center shadow-lg hover:border-red-500/20 transition-all">
                     <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mb-3">{item.label}</p>
-                    <p className="text-4xl md:text-5xl font-black text-white italic leading-none">{Number(item.val).toFixed(1)}<span className="text-xs text-red-500 ml-1 font-black">{item.u}</span></p>
+                    <p className="text-4xl md:text-5xl font-black text-white italic leading-none">{Math.round(item.val)}<span className="text-xs text-red-500 ml-1 font-black">{item.u}</span></p>
                  </div>
                ))}
             </div>
@@ -139,4 +139,4 @@ const ForzaFuel: React.FC<ForzaFuelProps> = ({ plan, isLoading }) => {
   );
 };
 
-export default ForzaFuel;
+export default ForzaCangasNutrition;

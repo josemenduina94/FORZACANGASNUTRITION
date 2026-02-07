@@ -11,7 +11,7 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/90 backdrop-blur-xl border-b border-white/5">
+    <nav className="fixed top-0 left-0 right-0 z-[100] bg-zinc-950/95 backdrop-blur-2xl border-b border-white/5 shadow-2xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <div className="flex items-center cursor-pointer gap-3" onClick={() => scrollTo('hero')}>
@@ -36,6 +36,15 @@ const Navbar: React.FC = () => {
                 Empezar Ya
               </button>
             </div>
+          </div>
+          {/* Botón mobile simple para asegurar visibilidad en preview */}
+          <div className="lg:hidden">
+             <button 
+               onClick={() => scrollTo('nutrition-form')}
+               className="bg-red-500 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest"
+             >
+               IA PLAN
+             </button>
           </div>
         </div>
       </div>

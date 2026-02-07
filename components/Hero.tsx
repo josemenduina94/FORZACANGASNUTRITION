@@ -14,7 +14,7 @@ const Hero: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent"></div>
       </div>
       
-      <div className="relative z-10 max-w-7xl mx-auto px-4 text-center">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 text-center mt-20">
         <div className="flex justify-center mb-8">
            <div className="bg-red-500 p-4 rounded-3xl shadow-2xl shadow-red-500/40">
              <Dumbbell className="text-white w-12 h-12 md:w-16 md:h-16" />

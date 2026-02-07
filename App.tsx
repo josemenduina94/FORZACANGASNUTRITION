@@ -7,7 +7,7 @@ import Services from './components/Services';
 import Facilities from './components/Facilities';
 import Education from './components/Education';
 import NutritionForm from './components/NutritionForm';
-import ForzaFuel from './components/ForzaFuel';
+import ForzaCangasNutrition from './components/ForzaCangasNutrition';
 import FoodExchanger from './components/FoodExchanger';
 import ProgressTracker from './components/ProgressTracker';
 import Pricing from './components/Pricing';
@@ -41,7 +41,7 @@ const App: React.FC = () => {
     <div className="min-h-screen selection:bg-red-500/30 selection:text-red-500 bg-zinc-950">
       <Navbar />
       
-      <main>
+      <main className="pt-20 lg:pt-0">
         <Hero />
         <About />
         <Services />
@@ -58,7 +58,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        <ForzaFuel plan={nutritionPlan} isLoading={isLoading} />
+        <ForzaCangasNutrition plan={nutritionPlan} isLoading={isLoading} />
         
         <FoodExchanger />
 

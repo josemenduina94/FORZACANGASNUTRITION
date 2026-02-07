@@ -2,7 +2,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserData, NutritionPlan, QuestionnaireData } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Inicialización estricta usando process.env.API_KEY
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
  * Fórmula de Harris-Benedict (Revisión de Roza y Shizgal, 1984)
@@ -31,12 +32,12 @@ export const generateNutritionPlan = async (
   userData: UserData, 
   healthData: QuestionnaireData
 ): Promise<NutritionPlan> => {
-  const tdee = calculateTDEE(userData);
+  const tdee = Math.round(calculateTDEE(userData));
   
   const systemInstruction = `Eres el Nutricionista Jefe de Forza Cangas Nutrition. 
   Tu misión es generar planes de alimentación basados en DATOS MATEMÁTICOS EXACTOS.
   REGLA DE ORO: El total de calorías diario DEBE ser exactamente ${tdee}.
-  No aceptes variaciones. La suma de las calorías de cada comida debe cuadrar al 100%.`;
+  IMPORTANTE: Todos los valores numéricos de macronutrientes y calorías deben ser números ENTEROS, sin decimales.`;
 
   const prompt = `GENERAR PROTOCOLO NUTRICIONAL ELITE:
   - TDEE CALCULADO (FIJO): ${tdee} kcal
@@ -47,8 +48,8 @@ export const generateNutritionPlan = async (
   REGLAS PARA EL JSON:
   1. dailyTotals.calories = ${tdee}.
   2. Suma de macros.calories de las comidas = ${tdee}.
-  3. Proporciona nombres de platos realistas con ingredientes (ej: "Salmón a la plancha con espárragos y quinoa").
-  4. La descripción debe mencionar por qué esos ingredientes ayudan al objetivo.`;
+  3. Todos los valores (protein, carbs, fats, calories) deben ser números ENTEROS.
+  4. Proporciona nombres de platos realistas con ingredientes.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -104,13 +105,26 @@ export const generateNutritionPlan = async (
 
     const plan = JSON.parse(response.text || '{}') as NutritionPlan;
     
-    // Sobreescritura de seguridad para garantizar que el frontend siempre muestre el TDEE matemático correcto
-    plan.dailyTotals.calories = tdee;
-    plan.dailyTotals.tdee = tdee;
+    // Sobreescritura de seguridad para garantizar coherencia matemática y sin decimales
+    plan.dailyTotals.calories = Math.round(tdee);
+    plan.dailyTotals.tdee = Math.round(tdee);
+    plan.dailyTotals.protein = Math.round(plan.dailyTotals.protein);
+    plan.dailyTotals.carbs = Math.round(plan.dailyTotals.carbs);
+    plan.dailyTotals.fats = Math.round(plan.dailyTotals.fats);
+    
+    plan.meals = plan.meals.map(meal => ({
+      ...meal,
+      macros: {
+        protein: Math.round(meal.macros.protein),
+        carbs: Math.round(meal.macros.carbs),
+        fats: Math.round(meal.macros.fats),
+        calories: Math.round(meal.macros.calories)
+      }
+    }));
     
     return plan;
   } catch (error) {
-    console.error("Error IA:", error);
+    console.error("Error en la generación del plan nutricional:", error);
     throw error;
   }
 };

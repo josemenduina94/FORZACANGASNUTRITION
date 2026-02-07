@@ -63,7 +63,7 @@ const FoodExchanger: React.FC = () => {
     return EXTENDED_FOOD_DB.filter(f => f.category === selectedFood.category && f.name !== selectedFood.name);
   }, [selectedFood]);
 
-  const calculateAmount = (altFood: Food) => {
+  const calculateAmount = (altFood: Food): number => {
     if (!selectedFood) return 0;
     let factor = 1;
     if (calcMode === 'calories') {
@@ -138,7 +138,7 @@ const FoodExchanger: React.FC = () => {
                 <input 
                   type="number" 
                   value={baseAmount}
-                  onChange={(e) => setBaseAmount(Math.max(1, Number(e.target.value)))}
+                  onChange={(e) => setBaseAmount(Math.max(1, Math.round(Number(e.target.value))))}
                   className="w-full bg-zinc-950 border border-white/10 rounded-2xl py-4 px-6 text-white font-black italic focus:border-red-500 transition-all outline-none"
                 />
               </div>
@@ -217,7 +217,7 @@ const FoodExchanger: React.FC = () => {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-4xl font-black text-red-500 italic leading-none">{amount}<span className="text-xs ml-1">g</span></p>
+                        <p className="text-4xl font-black text-red-500 italic leading-none">{Math.round(amount)}<span className="text-xs ml-1">g</span></p>
                         <p className="text-[9px] font-black text-zinc-700 uppercase tracking-widest mt-2 italic">Dosis Ideal</p>
                       </div>
                     </div>
