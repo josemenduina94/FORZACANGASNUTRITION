@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NutritionPlan, Meal } from '../types';
 import { Download } from 'lucide-react';

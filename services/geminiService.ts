@@ -2,7 +2,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserData, NutritionPlan, QuestionnaireData } from "../types";
 
-// Always use process.env.API_KEY exclusively for the API key as per guidelines.
+/**
+ * According to Google GenAI SDK guidelines, the API key must be obtained
+ * exclusively from the environment variable process.env.API_KEY.
+ * This also fixes the TypeError where import.meta.env was undefined.
+ */
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
@@ -53,7 +57,6 @@ export const generateNutritionPlan = async (
 
   try {
     const response = await ai.models.generateContent({
-      // Use gemini-3-pro-preview for complex reasoning and mathematical constraints
       model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
