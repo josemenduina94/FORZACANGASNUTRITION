@@ -1,14 +1,11 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
+import React from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App"; // tu componente principal
 
-const rootElement = document.getElementById('root');
-if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
-}
+const rootEl = document.getElementById("root");
+if (!rootEl) throw new Error("#root no encontrado");
 
-const root = ReactDOM.createRoot(rootElement);
-root.render(
+createRoot(rootEl).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
