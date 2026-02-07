@@ -10,7 +10,7 @@ const apiKey =
   (import.meta as any)?.env?.VITE_GEMINI_API_KEY;
 
 if (!apiKey) {
-  throw new Error("❌ Gemini API Key no definida en entorno browser");
+  throw new Error("Gemini API Key no definida en entorno browser");
 }
 
 const ai = new GoogleGenAI({ apiKey });
