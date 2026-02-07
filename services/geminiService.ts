@@ -1,27 +1,19 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserData, NutritionPlan, QuestionnaireData } from "../types";
-
-import { GoogleGenAI, Type } from "@google/genai";
-import { UserData, NutritionPlan, QuestionnaireData } from "../types";
-
-const apiKey =
-  (globalThis as any).__GEMINI_API_KEY__ ||
-  (import.meta as any)?.env?.VITE_GEMINI_API_KEY;
-
-if (!apiKey) {
-  throw new Error("Gemini API Key no definida en entorno browser");
-}
-
-const ai = new GoogleGenAI({ apiKey });
 
 /**
- * Fórmula de Harris-Benedict (Revisión de Roza y Shizgal, 1984)
- * Calcula la Tasa Metabólica Basal y aplica el factor de actividad y objetivo.
+ * According to Google GenAI SDK coding guidelines:
+ * 1. Always use const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+ * 2. The API key must be obtained exclusively from the environment variable process.env.API_KEY.
+ */
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+/**
+ * Harris-Benedict Formula (Roza and Shizgal revision, 1984)
+ * Calculates Basal Metabolic Rate and applies activity and goal factors.
  */
 export const calculateTDEE = (data: UserData): number => {
   let bmr: number;
-  // Harris-Benedict revisada
   if (data.gender === 'masculino') {
     bmr = 88.362 + (13.397 * data.weight) + (4.799 * data.height) - (5.677 * data.age);
   } else {
@@ -30,7 +22,6 @@ export const calculateTDEE = (data: UserData): number => {
   
   const maintenance = bmr * data.activityLevel;
   
-  // Ajuste según el objetivo antes de aplicar el factor de actividad
   let adjustment = 0;
   if (data.goal === 'Pérdida de Grasa') adjustment = -500;
   if (data.goal === 'Ganancia Muscular') adjustment = 300;
@@ -65,7 +56,6 @@ export const generateNutritionPlan = async (
 
   try {
     const response = await ai.models.generateContent({
-      // Usamos el modelo Pro para tareas complejas de razonamiento nutricional y matemático
       model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
@@ -121,7 +111,7 @@ export const generateNutritionPlan = async (
     
     const plan = JSON.parse(planText) as NutritionPlan;
     
-    // Post-procesamiento de seguridad para garantizar coherencia absoluta y ausencia de decimales
+    // Safety post-processing to ensure absolute coherence and no decimals
     plan.dailyTotals.calories = Math.round(tdee);
     plan.dailyTotals.tdee = Math.round(tdee);
     plan.dailyTotals.protein = Math.round(plan.dailyTotals.protein);
