@@ -6,8 +6,7 @@ import { UserData, NutritionPlan, QuestionnaireData } from "../types";
  * 1. Always use const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
  * 2. The API key must be obtained exclusively from the environment variable process.env.API_KEY.
  */
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 /**
  * Harris-Benedict Formula (Roza and Shizgal revision, 1984)
  * Calculates Basal Metabolic Rate and applies activity and goal factors.
