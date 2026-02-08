@@ -1,9 +1,11 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserData, NutritionPlan, QuestionnaireData } from "../types";
 
-// The API key is obtained exclusively from process.env.API_KEY as per guidelines.
-// GoogleGenAI instance is created inside the function to ensure the correct context.
+/**
+ * Inicialización siguiendo las directrices de Google GenAI SDK.
+ * Se utiliza exclusivamente process.env.API_KEY.
+ */
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
  * Fórmula de Harris-Benedict revisada
@@ -26,29 +28,27 @@ export const generateNutritionPlan = async (
   userData: UserData, 
   healthData: QuestionnaireData
 ): Promise<NutritionPlan> => {
-  
-  // Initialize GoogleGenAI with a named parameter for the API key.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
   const tdee = calculateTDEE(userData);
   
-  const systemInstruction = `Eres el Nutricionista Jefe de "Forza Cangas Nutrition".
-  Tu misión es diseñar planes de alimentación precisos y equilibrados.
-  
-  REGLAS CRÍTICAS DE REPARTO:
-  1. REPARTO EQUITATIVO: Divide el TDEE (${tdee} kcal) de forma balanceada entre las ${userData.mealCount} comidas. 
-  2. NINGUNA comida debe ser excesivamente grande o pequeña. Variación máxima del 15% entre comidas.
-  3. MACROS BALANCEADOS: Reparte proteínas, hidratos y grasas de forma lógica en cada comida.
-  4. GRAMAJES: Especifica cantidades exactas en gramos (g) en la descripción.
-  5. TERMINOLOGÍA: Usa "Comida" en lugar de "Protocolo".`;
+  const systemInstruction = `Eres el Nutricionista Jefe de "Forza Cangas Nutrition". 
+  Tu misión es diseñar planes de alimentación de alto rendimiento.
 
-  const prompt = `GENERAR PLAN NUTRICIONAL EQUILIBRADO:
-  - TDEE TOTAL: ${tdee} kcal
-  - Comidas: ${userData.mealCount} (Aprox. ${Math.round(tdee / userData.mealCount)} kcal por comida)
+  REGLAS CRÍTICAS DE BALANCE (EVITAR DESCOMPENSACIÓN):
+  1. REPARTO EQUITATIVO: El total de ${tdee} kcal debe dividirse equitativamente entre las ${userData.mealCount} comidas. 
+  2. NINGUNA comida puede tener menos del 20% ni más del 30% del total calórico diario (salvo que el número de comidas sea muy bajo).
+  3. EVITA el error de poner una comida de 900kcal y otra de 200kcal. El objetivo es aprox ${Math.round(tdee / userData.mealCount)} kcal por comida.
+  4. GRAMAJES EXACTOS: En "description", especifica cada alimento con su PESO en gramos (g).
+  5. TERMINOLOGÍA: Usa siempre la palabra "Comida" para referirte a las ingestas.
+  6. RESPUESTA: Solo JSON puro.`;
+
+  const prompt = `GENERAR PROTOCOLO NUTRICIONAL ELITE:
+  - TDEE OBJETIVO: ${tdee} kcal
+  - Distribución ideal: ~${Math.round(tdee / userData.mealCount)} kcal por cada una de las ${userData.mealCount} comidas.
   - Objetivo: ${userData.goal}
-  - Atleta: ${userData.weight}kg, ${userData.height}cm, ${userData.age} años.
+  - Atleta: Peso ${userData.weight}kg, Altura ${userData.height}cm, Edad ${userData.age} años.
+  - Estrés: ${healthData.stressLevel}, Sueño: ${healthData.sleepQuality}.
   
-  Detalla ingredientes exactos con sus pesos para cada comida.`;
+  Crea un plan realista, con ingredientes comunes pero efectivos (pollo, arroz, aguacate, huevos, avena, etc.) y cantidades precisas.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -66,8 +66,8 @@ export const generateNutritionPlan = async (
                 type: Type.OBJECT,
                 properties: {
                   name: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  imageDescription: { type: Type.STRING },
+                  description: { type: Type.STRING, description: "Lista de ingredientes con gramajes exactos" },
+                  imageDescription: { type: Type.STRING, description: "Short technical description in English for image search" },
                   macros: {
                     type: Type.OBJECT,
                     properties: {
@@ -103,19 +103,28 @@ export const generateNutritionPlan = async (
       },
     });
 
-    // Directly access .text property from GenerateContentResponse
     const planText = response.text;
-    if (!planText) throw new Error("Sin respuesta de la IA.");
+    if (!planText) throw new Error("La IA no devolvió contenido.");
     
     const plan = JSON.parse(planText) as NutritionPlan;
     
-    // Forzar consistencia matemática final
+    // Forzar redondeo final y coherencia con el cálculo base
     plan.dailyTotals.calories = Math.round(tdee);
     plan.dailyTotals.tdee = Math.round(tdee);
     
+    plan.meals = plan.meals.map(meal => ({
+      ...meal,
+      macros: {
+        protein: Math.round(meal.macros.protein),
+        carbs: Math.round(meal.macros.carbs),
+        fats: Math.round(meal.macros.fats),
+        calories: Math.round(meal.macros.calories)
+      }
+    }));
+    
     return plan;
   } catch (error) {
-    console.error("Error en Gemini Service:", error);
+    console.error("Error en generateNutritionPlan:", error);
     throw error;
   }
 };
