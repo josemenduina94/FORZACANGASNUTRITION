@@ -52,7 +52,7 @@ const MealCard: React.FC<{ meal: Meal; index: number }> = ({ meal, index }) => {
       
       <div className="p-8 flex flex-col flex-grow">
         <div className="flex justify-between items-start mb-4">
-          <h3 className="text-xs font-black uppercase tracking-widest text-red-500 italic">Protocolo {index + 1}</h3>
+          <h3 className="text-xs font-black uppercase tracking-widest text-red-500 italic">Comida {index + 1}</h3>
           <span className="text-2xl font-black italic text-white leading-none">{Math.round(meal.macros.calories)} <span className="text-[10px] text-zinc-500 uppercase">kcal</span></span>
         </div>
         
@@ -92,7 +92,7 @@ const ForzaCangasNutrition: React.FC<ForzaCangasNutritionProps> = ({ plan, isLoa
     if (!plan) return;
     const doc = new jsPDF();
     doc.setFontSize(22);
-    doc.text("FORZA CANGAS NUTRITION - PROTOCOLO ELITE", 10, 20);
+    doc.text("FORZA CANGAS NUTRITION - PLAN ELITE", 10, 20);
     doc.setFontSize(14);
     doc.text(`TDEE Objetivo: ${Math.round(plan.dailyTotals.tdee)} kcal`, 10, 40);
     
@@ -102,7 +102,7 @@ const ForzaCangasNutrition: React.FC<ForzaCangasNutritionProps> = ({ plan, isLoa
         doc.text(`${meal.description}`, 15, 65 + (i * 20));
         doc.setFontSize(14);
     });
-    doc.save(`Forza_Nutrition_Protocol_${new Date().getTime()}.pdf`);
+    doc.save(`Forza_Nutrition_Plan_${new Date().getTime()}.pdf`);
   };
 
   if (!plan && !isLoading) return null;
@@ -120,7 +120,7 @@ const ForzaCangasNutrition: React.FC<ForzaCangasNutritionProps> = ({ plan, isLoa
               onClick={exportPDF}
               className="px-10 py-5 bg-white text-zinc-950 font-black rounded-2xl hover:bg-zinc-200 transition-all uppercase tracking-tighter flex items-center gap-3 shadow-xl"
             >
-              <Download size={20} /> Exportar Protocolo PDF
+              <Download size={20} /> Exportar Plan PDF
             </button>
           )}
         </div>

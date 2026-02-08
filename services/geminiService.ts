@@ -1,15 +1,12 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserData, NutritionPlan, QuestionnaireData } from "../types";
 
-/**
- * Inicialización siguiendo las directrices obligatorias:
- * La clave API se obtiene exclusivamente de process.env.API_KEY.
- * Se usa el parámetro nombrado { apiKey } al instanciar GoogleGenAI.
- */
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// The API key is obtained exclusively from process.env.API_KEY as per guidelines.
+// GoogleGenAI instance is created inside the function to ensure the correct context.
 
 /**
- * Fórmula de Harris-Benedict revisada (Roza y Shizgal, 1984)
+ * Fórmula de Harris-Benedict revisada
  */
 export const calculateTDEE = (data: UserData): number => {
   let bmr: number;
@@ -18,49 +15,44 @@ export const calculateTDEE = (data: UserData): number => {
   } else {
     bmr = 447.593 + (9.247 * data.weight) + (3.098 * data.height) - (4.330 * data.age);
   }
-  
   const maintenance = bmr * data.activityLevel;
-  
   let adjustment = 0;
   if (data.goal === 'Pérdida de Grasa') adjustment = -500;
   if (data.goal === 'Ganancia Muscular') adjustment = 300;
-  
   return Math.round(maintenance + adjustment);
 };
 
-/**
- * Genera el protocolo nutricional detallado.
- * Usa 'gemini-flash-latest' para máxima compatibilidad y velocidad.
- */
 export const generateNutritionPlan = async (
   userData: UserData, 
   healthData: QuestionnaireData
 ): Promise<NutritionPlan> => {
+  
+  // Initialize GoogleGenAI with a named parameter for the API key.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
   const tdee = calculateTDEE(userData);
   
-  const systemInstruction = `Eres el Nutricionista Jefe de "Forza Cangas Nutrition". 
-  Tu misión es diseñar protocolos de alimentación MILIMÉTRICOS para atletas.
+  const systemInstruction = `Eres el Nutricionista Jefe de "Forza Cangas Nutrition".
+  Tu misión es diseñar planes de alimentación precisos y equilibrados.
   
-  REGLAS DE ORO:
-  1. CALORÍAS TOTALES: El plan DEBE sumar exactamente ${tdee} kcal.
-  2. GRAMAJES EXACTOS: En el campo "description", DEBES listar cada alimento con su peso exacto en gramos (g).
-     Ejemplo: "200g de pechuga de pollo a la plancha, 150g de arroz integral pesado en crudo, 80g de aguacate".
-  3. SIN GENERALIDADES: Prohibido decir "un plato", "una pieza" o "una porción". Todo debe tener gramaje.
-  4. MACRONUTRIENTES: Calcula los macros (P, C, G) para esos gramajes específicos. Deben ser números ENTEROS.
-  5. IMÁGENES: La "imageDescription" debe ser técnica y en inglés para que la búsqueda sea precisa (ej: "grilled chicken breast with brown rice and avocado").`;
+  REGLAS CRÍTICAS DE REPARTO:
+  1. REPARTO EQUITATIVO: Divide el TDEE (${tdee} kcal) de forma balanceada entre las ${userData.mealCount} comidas. 
+  2. NINGUNA comida debe ser excesivamente grande o pequeña. Variación máxima del 15% entre comidas.
+  3. MACROS BALANCEADOS: Reparte proteínas, hidratos y grasas de forma lógica en cada comida.
+  4. GRAMAJES: Especifica cantidades exactas en gramos (g) en la descripción.
+  5. TERMINOLOGÍA: Usa "Comida" en lugar de "Protocolo".`;
 
-  const prompt = `GENERAR PROTOCOLO NUTRICIONAL ELITE:
-  - TDEE OBJETIVO: ${tdee} kcal
+  const prompt = `GENERAR PLAN NUTRICIONAL EQUILIBRADO:
+  - TDEE TOTAL: ${tdee} kcal
+  - Comidas: ${userData.mealCount} (Aprox. ${Math.round(tdee / userData.mealCount)} kcal por comida)
   - Objetivo: ${userData.goal}
-  - Número de comidas: ${userData.mealCount}
-  - Datos Biométricos: Peso ${userData.weight}kg, Altura ${userData.height}cm, Edad ${userData.age} años.
-  - Contexto Salud: Estrés ${healthData.stressLevel}, Alergias: ${healthData.allergies || 'Ninguna'}.
-
-  Crea un plan que sea visualmente coherente y nutricionalmente perfecto.`;
+  - Atleta: ${userData.weight}kg, ${userData.height}cm, ${userData.age} años.
+  
+  Detalla ingredientes exactos con sus pesos para cada comida.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-flash-latest',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         systemInstruction,
@@ -74,10 +66,7 @@ export const generateNutritionPlan = async (
                 type: Type.OBJECT,
                 properties: {
                   name: { type: Type.STRING },
-                  description: { 
-                    type: Type.STRING,
-                    description: "Lista detallada de ingredientes con gramajes específicos (ej: 200g Pollo...)"
-                  },
+                  description: { type: Type.STRING },
                   imageDescription: { type: Type.STRING },
                   macros: {
                     type: Type.OBJECT,
@@ -114,28 +103,19 @@ export const generateNutritionPlan = async (
       },
     });
 
+    // Directly access .text property from GenerateContentResponse
     const planText = response.text;
-    if (!planText) throw new Error("La IA no devolvió contenido.");
+    if (!planText) throw new Error("Sin respuesta de la IA.");
     
     const plan = JSON.parse(planText) as NutritionPlan;
     
-    // Aseguramos redondeo y consistencia total con el TDEE
+    // Forzar consistencia matemática final
     plan.dailyTotals.calories = Math.round(tdee);
     plan.dailyTotals.tdee = Math.round(tdee);
     
-    plan.meals = plan.meals.map(meal => ({
-      ...meal,
-      macros: {
-        protein: Math.round(meal.macros.protein),
-        carbs: Math.round(meal.macros.carbs),
-        fats: Math.round(meal.macros.fats),
-        calories: Math.round(meal.macros.calories)
-      }
-    }));
-    
     return plan;
   } catch (error) {
-    console.error("Error crítico en la generación del plan:", error);
+    console.error("Error en Gemini Service:", error);
     throw error;
   }
 };
