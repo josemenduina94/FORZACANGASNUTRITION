@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { NutritionPlan, Meal } from '../types';
-import { Download } from 'lucide-react';
+import { Download, Scale, Zap, Info } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
 interface ForzaCangasNutritionProps {
@@ -14,11 +13,10 @@ const MealCard: React.FC<{ meal: Meal; index: number }> = ({ meal, index }) => {
   const [imageUrl, setImageUrl] = useState(fallbackUrl);
 
   useEffect(() => {
-    // Clave API de Unsplash hardcodeada para pruebas en el entorno actual
     const unsplashApiKey = "1v8avkDCUeUlgqPzeVnqQnDfH3fMHjhu--yrgw_smbw"; 
 
     if (meal.imageDescription) {
-      const query = encodeURIComponent(meal.imageDescription);
+      const query = encodeURIComponent(meal.imageDescription + " food");
       const url = `https://api.unsplash.com/search/photos?query=${query}&per_page=1&client_id=${unsplashApiKey}`;
 
       fetch(url)
@@ -36,44 +34,52 @@ const MealCard: React.FC<{ meal: Meal; index: number }> = ({ meal, index }) => {
 
   return (
     <div className="bg-zinc-900 rounded-[2.5rem] border border-white/5 overflow-hidden flex flex-col h-full shadow-2xl group hover:border-red-500/20 transition-all">
-      <div className="h-52 bg-zinc-800 relative overflow-hidden">
+      <div className="h-56 bg-zinc-800 relative overflow-hidden">
         <img 
           src={imageUrl} 
           alt={meal.name}
-          className="w-full h-52 object-cover rounded-t-[2.5rem] group-hover:scale-110 transition-transform duration-700"
+          className="w-full h-full object-cover rounded-t-[2.5rem] group-hover:scale-110 transition-transform duration-700"
           loading="lazy"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            if (target.src !== fallbackUrl) {
-              target.src = fallbackUrl;
-            }
-          }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 to-transparent"></div>
-        <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end">
-          <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">IA Visual Scan</span>
-          <div className="w-12 h-1 bg-red-500/40 rounded-full"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent"></div>
+        <div className="absolute top-4 left-4">
+          <div className="bg-black/60 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full flex items-center gap-2">
+            <Scale size={12} className="text-red-500" />
+            <span className="text-[10px] font-black text-white uppercase tracking-widest italic">Pesaje de Precisión</span>
+          </div>
         </div>
       </div>
-      <div className="p-8">
-        <div className="flex justify-between items-start mb-6">
-          <h3 className="text-xs font-black uppercase tracking-widest text-red-500 italic">Comida {index + 1}</h3>
-          <span className="text-xl font-black italic text-white">{Math.round(meal.macros.calories)} <span className="text-[10px] text-zinc-500 uppercase">kcal</span></span>
+      
+      <div className="p-8 flex flex-col flex-grow">
+        <div className="flex justify-between items-start mb-4">
+          <h3 className="text-xs font-black uppercase tracking-widest text-red-500 italic">Protocolo {index + 1}</h3>
+          <span className="text-2xl font-black italic text-white leading-none">{Math.round(meal.macros.calories)} <span className="text-[10px] text-zinc-500 uppercase">kcal</span></span>
         </div>
-        <h4 className="text-2xl font-black mb-4 text-white uppercase italic leading-tight">{meal.name}</h4>
-        <p className="text-zinc-400 text-sm mb-8 flex-grow leading-relaxed font-medium italic border-l border-white/10 pl-4">{meal.description}</p>
-        <div className="grid grid-cols-3 gap-3 border-t border-white/5 pt-8">
-          <div className="text-center p-3 bg-white/5 rounded-2xl border border-white/5 group-hover:bg-red-500/5 transition-colors">
-            <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">PROT</p>
-            <p className="text-lg font-black text-white">{Math.round(meal.macros.protein)}g</p>
+        
+        <h4 className="text-2xl font-black mb-6 text-white uppercase italic leading-tight group-hover:text-red-500 transition-colors">{meal.name}</h4>
+        
+        <div className="bg-white/5 rounded-2xl p-5 mb-8 border border-white/5 relative overflow-hidden flex-grow group/desc">
+          <div className="flex items-center gap-2 mb-3">
+             <Info size={14} className="text-red-500" />
+             <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Ingredientes y Gramajes</span>
           </div>
-          <div className="text-center p-3 bg-white/5 rounded-2xl border border-white/5 group-hover:bg-red-500/5 transition-colors">
-            <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">CARB</p>
-            <p className="text-lg font-black text-white">{Math.round(meal.macros.carbs)}g</p>
+          <p className="text-zinc-200 text-sm leading-relaxed font-bold italic border-l-2 border-red-500 pl-4">
+            {meal.description}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 pt-4 border-t border-white/5">
+          <div className="text-center p-3 bg-zinc-950 rounded-2xl border border-white/5">
+            <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Proteína</p>
+            <p className="text-lg font-black text-white italic">{Math.round(meal.macros.protein)}g</p>
           </div>
-          <div className="text-center p-3 bg-white/5 rounded-2xl border border-white/5 group-hover:bg-red-500/5 transition-colors">
-            <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">GRAS</p>
-            <p className="text-lg font-black text-white">{Math.round(meal.macros.fats)}g</p>
+          <div className="text-center p-3 bg-zinc-950 rounded-2xl border border-white/5">
+            <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Carbos</p>
+            <p className="text-lg font-black text-white italic">{Math.round(meal.macros.carbs)}g</p>
+          </div>
+          <div className="text-center p-3 bg-zinc-950 rounded-2xl border border-white/5">
+            <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Grasas</p>
+            <p className="text-lg font-black text-white italic">{Math.round(meal.macros.fats)}g</p>
           </div>
         </div>
       </div>
@@ -86,14 +92,17 @@ const ForzaCangasNutrition: React.FC<ForzaCangasNutritionProps> = ({ plan, isLoa
     if (!plan) return;
     const doc = new jsPDF();
     doc.setFontSize(22);
-    doc.text("FORZA CANGAS NUTRITION - PLAN PERSONALIZADO", 10, 20);
+    doc.text("FORZA CANGAS NUTRITION - PROTOCOLO ELITE", 10, 20);
     doc.setFontSize(14);
-    doc.text(`Calorías Totales: ${Math.round(plan.dailyTotals.calories)} kcal`, 10, 40);
+    doc.text(`TDEE Objetivo: ${Math.round(plan.dailyTotals.tdee)} kcal`, 10, 40);
     
     plan.meals.forEach((meal, i) => {
-        doc.text(`${i+1}. ${meal.name} (${Math.round(meal.macros.calories)} kcal)`, 10, 60 + (i * 10));
+        doc.text(`${i+1}. ${meal.name}`, 10, 60 + (i * 20));
+        doc.setFontSize(10);
+        doc.text(`${meal.description}`, 15, 65 + (i * 20));
+        doc.setFontSize(14);
     });
-    doc.save(`Forza_Cangas_Nutrition_Plan_${new Date().getTime()}.pdf`);
+    doc.save(`Forza_Nutrition_Protocol_${new Date().getTime()}.pdf`);
   };
 
   if (!plan && !isLoading) return null;
@@ -103,15 +112,15 @@ const ForzaCangasNutrition: React.FC<ForzaCangasNutritionProps> = ({ plan, isLoa
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center mb-16 gap-6">
           <div className="text-center md:text-left">
-            <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter italic text-white">FORZA <span className="text-red-500">CANGAS NUTRITION</span></h2>
-            <p className="text-zinc-500 mt-2 font-bold uppercase text-xs tracking-[0.2em]">Configuración Ganadora Generada por IA</p>
+            <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter italic text-white">ESTRATEGIA <span className="text-red-500">BIO-MÉTRICA</span></h2>
+            <p className="text-zinc-500 mt-2 font-bold uppercase text-xs tracking-[0.2em]">Configuración de Macronutrientes por IA</p>
           </div>
           {plan && (
             <button 
               onClick={exportPDF}
               className="px-10 py-5 bg-white text-zinc-950 font-black rounded-2xl hover:bg-zinc-200 transition-all uppercase tracking-tighter flex items-center gap-3 shadow-xl"
             >
-              <Download size={20} /> Exportar Plan PDF
+              <Download size={20} /> Exportar Protocolo PDF
             </button>
           )}
         </div>
@@ -119,16 +128,16 @@ const ForzaCangasNutrition: React.FC<ForzaCangasNutritionProps> = ({ plan, isLoa
         {isLoading ? (
           <div className="py-24 flex flex-col items-center justify-center bg-zinc-900/50 rounded-[2.5rem] border border-white/5">
             <div className="w-20 h-20 border-4 border-red-500/10 border-t-red-500 rounded-full animate-spin mb-8"></div>
-            <p className="text-zinc-500 font-black uppercase tracking-[0.3em] italic animate-pulse text-center px-4">Sincronizando con la red Forza Cangas...</p>
+            <p className="text-zinc-500 font-black uppercase tracking-[0.3em] italic animate-pulse text-center px-4">Calculando densidades calóricas...</p>
           </div>
         ) : plan ? (
           <div className="space-y-16">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                {[
                  { label: 'CALORÍAS TOTALES', val: plan.dailyTotals.calories, u: 'kcal' },
-                 { label: 'PROTEÍNA', val: plan.dailyTotals.protein, u: 'g' },
+                 { label: 'PROTEÍNA TOTAL', val: plan.dailyTotals.protein, u: 'g' },
                  { label: 'CARBOHIDRATOS', val: plan.dailyTotals.carbs, u: 'g' },
-                 { label: 'GRASAS', val: plan.dailyTotals.fats, u: 'g' }
+                 { label: 'GRASAS TOTALES', val: plan.dailyTotals.fats, u: 'g' }
                ].map((item, i) => (
                  <div key={i} className="bg-zinc-900 p-8 rounded-[2.5rem] border border-white/5 text-center shadow-lg hover:border-red-500/20 transition-all">
                     <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mb-3">{item.label}</p>
@@ -141,6 +150,18 @@ const ForzaCangasNutrition: React.FC<ForzaCangasNutritionProps> = ({ plan, isLoa
               {plan.meals.map((meal, idx) => (
                 <MealCard key={idx} meal={meal} index={idx} />
               ))}
+            </div>
+
+            <div className="bg-zinc-900/50 p-8 md:p-12 rounded-[2.5rem] border border-white/5">
+              <h3 className="text-xl font-black uppercase italic text-white mb-8">Recomendaciones de Élite</h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                {plan.recommendations.map((rec, i) => (
+                  <div key={i} className="flex gap-4 items-start">
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full mt-2 shrink-0"></div>
+                    <p className="text-zinc-400 text-sm font-bold italic">{rec}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         ) : null}

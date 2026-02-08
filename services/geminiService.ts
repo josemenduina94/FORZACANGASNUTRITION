@@ -1,16 +1,14 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserData, NutritionPlan, QuestionnaireData } from "../types";
 
 /**
- * Según las directrices de Google GenAI SDK:
- * 1. La clave API debe obtenerse exclusivamente de process.env.API_KEY.
- * 2. Se debe usar la clase GoogleGenAI con el parámetro nombrado { apiKey }.
+ * Inicialización según las directrices de Google GenAI SDK.
+ * La clave API se obtiene exclusivamente de process.env.API_KEY.
  */
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
- * Fórmula de Harris-Benedict
+ * Fórmula de Harris-Benedict (Revisión de Roza y Shizgal, 1984)
  */
 export const calculateTDEE = (data: UserData): number => {
   let bmr: number;
@@ -35,22 +33,31 @@ export const generateNutritionPlan = async (
 ): Promise<NutritionPlan> => {
   const tdee = calculateTDEE(userData);
   
-  const systemInstruction = `Eres el Nutricionista Jefe de Forza Cangas Nutrition. 
-  Tu misión es generar planes de alimentación basados en DATOS MATEMÁTICOS EXACTOS para atletas de élite.
-  REGLA DE ORO: El total de calorías diario DEBE ser exactamente ${tdee}.
-  IMPORTANTE: Todos los valores numéricos de macronutrientes y calorías deben ser números ENTEROS (redondeados).
-  Usa un tono profesional, motivador y directo.`;
+  const systemInstruction = `Eres el Nutricionista Jefe de "Forza Cangas Nutrition". 
+  Tu especialidad es la nutrición de precisión para atletas de élite.
+  
+  REGLAS MANDATORIAS:
+  1. Cada comida DEBE desglosar exactamente qué comer y en qué cantidad (ej: "200g de pechuga de pollo, 100g de arroz basmati pesado en crudo, 50g de aguacate"). No acepto descripciones vagas.
+  2. El total calórico diario DEBE ser exactamente ${tdee} kcal.
+  3. Los macronutrientes (proteína, carbos, grasas) deben ser números ENTEROS.
+  4. La descripción de la comida en el campo "description" DEBE ser una lista detallada de ingredientes con sus gramajes específicos.
+  5. El tono es profesional, de alto rendimiento y motivador.`;
 
-  const prompt = `GENERAR PLAN NUTRICIONAL:
+  const prompt = `GENERAR PROTOCOLO NUTRICIONAL ELITE:
   - TDEE OBJETIVO: ${tdee} kcal
   - Objetivo: ${userData.goal}
-  - Comidas: ${userData.mealCount}
+  - Número de Comidas: ${userData.mealCount}
+  - Perfil del Atleta: Peso ${userData.weight}kg, Altura ${userData.height}cm, Edad ${userData.age} años.
 
-  IMPORTANTE: Para cada comida, rellena el campo "imageDescription" con una descripción técnica en inglés del plato (ejemplo: "grilled salmon with asparagus", "greek yogurt with walnuts"). No inventes URLs, solo describe el plato.`;
+  ESTRUCTURA DE RESPUESTA (JSON):
+  - "name": Nombre del plato.
+  - "description": Lista detallada de ingredientes con PESO EXACTO (ej: "180g Salmón salvaje a la plancha, 150g Batata asada, 100g Brócoli al vapor, 10ml Aceite de Oliva").
+  - "imageDescription": Descripción técnica corta en inglés para búsqueda de imágenes (ej: "grilled salmon with sweet potato and broccoli").
+  - "macros": Valores nutricionales calculados para esa comida.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', // Modelo actualizado para evitar errores 404 y cumplir directrices
+      model: 'gemini-flash-latest', // Alias recomendado para evitar errores 404 y asegurar compatibilidad
       contents: prompt,
       config: {
         systemInstruction,
@@ -101,12 +108,12 @@ export const generateNutritionPlan = async (
       },
     });
 
-    const planText = response.text; // 'text' es una propiedad, no un método.
+    const planText = response.text;
     if (!planText) throw new Error("La IA no devolvió contenido.");
     
     const plan = JSON.parse(planText) as NutritionPlan;
     
-    // Post-procesamiento de seguridad para forzar números enteros
+    // Aseguramos coherencia matemática final
     plan.dailyTotals.calories = Math.round(tdee);
     plan.dailyTotals.tdee = Math.round(tdee);
     
@@ -122,7 +129,7 @@ export const generateNutritionPlan = async (
     
     return plan;
   } catch (error) {
-    console.error("Error crítico en la conexión con Gemini:", error);
+    console.error("Error en Gemini:", error);
     throw error;
   }
 };
