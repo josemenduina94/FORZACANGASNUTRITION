@@ -28,9 +28,13 @@ const App: React.FC = () => {
       setTimeout(() => {
         document.getElementById('forza-nutrition')?.scrollIntoView({ behavior: 'smooth' });
       }, 200);
-    } catch (err) {
-      setError('Error en la conexión con la red Forza Cangas. Reintenta en unos instantes.');
+    } catch (err: any) {
       console.error(err);
+      if (err.message?.includes('API_KEY')) {
+        setError('CONFIGURACIÓN INCOMPLETA: Falta la API Key en las variables de entorno de Vercel.');
+      } else {
+        setError('Error en la conexión con la red Forza Cangas. Reintenta en unos instantes.');
+      }
     } finally {
       setIsLoading(false);
     }

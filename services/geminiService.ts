@@ -3,7 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { UserData, NutritionPlan, QuestionnaireData } from "../types";
 
 /**
- * Fórmula de Harris-Benedict revisada (Roza y Shizgal, 1984)
+ * Harris-Benedict revisada - Cálculo de gasto energético base
  */
 export const calculateTDEE = (data: UserData): number => {
   let bmr: number;
@@ -23,49 +23,33 @@ export const calculateTDEE = (data: UserData): number => {
 };
 
 /**
- * Genera el plan nutricional utilizando gemini-3-flash-preview.
+ * Genera el plan nutricional de alto rendimiento.
+ * Requiere que API_KEY esté definida en las variables de entorno de Vercel.
  */
 export const generateNutritionPlan = async (
   userData: UserData, 
   healthData: QuestionnaireData
 ): Promise<NutritionPlan> => {
-  // Verificación de seguridad de la API Key antes de instanciar
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error("ERROR_CONFIG: La clave de API de Gemini no está configurada en el entorno (process.env.API_KEY).");
-  }
-
-  // Inicialización siguiendo las directrices: new GoogleGenAI({ apiKey: process.env.API_KEY })
-  const ai = new GoogleGenAI({ apiKey });
+  // Inicialización directa según directrices de @google/genai
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const tdee = calculateTDEE(userData);
   const targetKcalPerMeal = Math.round(tdee / userData.mealCount);
   
   const systemInstruction = `Eres el Nutricionista Jefe de "Forza Cangas Nutrition". 
-  Tu misión es diseñar planes de alimentación de alto rendimiento con precisión matemática.
-
-  REGLAS DE REPARTO CALÓRICO (CRÍTICO):
-  1. EQUILIBRIO: Debes repartir las ${tdee} kcal de forma equilibrada entre las ${userData.mealCount} comidas.
-  2. OBJETIVO POR COMIDA: Cada comida debe tener aproximadamente ${targetKcalPerMeal} kcal. 
-  3. DESVIACIÓN MÁXIMA: La diferencia máxima permitida entre comidas es del 15%.
-  4. TERMINOLOGÍA: Usa el término "Comida".
-
-  REGLAS DE CONTENIDO:
-  1. GRAMAJES EXACTOS: En el campo "description", lista cada alimento con su peso exacto en gramos (g).
-  2. MACRONUTRIENTES: Calcula los macros para esos gramajes como números enteros.
-  3. IDIOMA: Responde en Español. La "imageDescription" debe ser en Inglés técnico.`;
-
-  const prompt = `GENERAR PLAN NUTRICIONAL EQUILIBRADO:
-  - TDEE TOTAL: ${tdee} kcal
-  - Objetivo: ${userData.goal}
-  - Número de Comidas: ${userData.mealCount}
-  - Atleta: ${userData.weight}kg, ${userData.height}cm, ${userData.age} años.
-  - Salud: Estrés ${healthData.stressLevel}, Sueño ${healthData.sleepQuality}.`;
+  Diseña un plan de alto rendimiento con ${tdee} kcal totales.
+  
+  REGLAS CRÍTICAS:
+  1. REPARTO: Distribuye las calorías equitativamente. Cada comida debe tener aprox ${targetKcalPerMeal} kcal.
+  2. GRAMAJES: Indica siempre los gramos (g) exactos de cada alimento en el campo description.
+  3. ESTRUCTURA: Usa el término "Comida" para cada ingesta.
+  4. FORMATO: Responde estrictamente en JSON.
+  5. IDIOMA: Español, excepto imageDescription que debe ser Inglés técnico para búsqueda de fotos.`;
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: prompt,
+      contents: `Generar plan nutricional para atleta de ${userData.weight}kg con objetivo de ${userData.goal}.`,
       config: {
         systemInstruction,
         responseMimeType: "application/json",
@@ -115,29 +99,28 @@ export const generateNutritionPlan = async (
       },
     });
 
-    // Acceso directo a .text según guías
+    // Acceso directo a la propiedad .text (no es un método)
     const planText = response.text;
-    if (!planText) throw new Error("La IA no devolvió contenido.");
+    if (!planText) throw new Error("Respuesta vacía de la IA.");
     
     const plan = JSON.parse(planText) as NutritionPlan;
     
-    // Coherencia final
+    // Normalización de datos finales
     plan.dailyTotals.calories = Math.round(tdee);
     plan.dailyTotals.tdee = Math.round(tdee);
-    
-    plan.meals = plan.meals.map(meal => ({
-      ...meal,
+    plan.meals = plan.meals.map(m => ({
+      ...m,
       macros: {
-        protein: Math.round(meal.macros.protein),
-        carbs: Math.round(meal.macros.carbs),
-        fats: Math.round(meal.macros.fats),
-        calories: Math.round(meal.macros.calories)
+        protein: Math.round(m.macros.protein),
+        carbs: Math.round(m.macros.carbs),
+        fats: Math.round(m.macros.fats),
+        calories: Math.round(m.macros.calories)
       }
     }));
     
     return plan;
   } catch (error) {
-    console.error("Error crítico en generación:", error);
+    console.error("Error en geminiService:", error);
     throw error;
   }
 };
