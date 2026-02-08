@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forza Cangas Nutrition - Elite Sports Nutrition</title>
+    <!-- Favicon SVG para evitar error 404 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💪</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -12,8 +14,8 @@
             font-family: 'Inter', sans-serif;
             background-color: #09090b; /* zinc-950 */
             color: #ffffff;
+            margin: 0;
         }
-        /* Scrollbar styling para estética Pro */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #ef444430; border-radius: 10px; }
@@ -36,7 +38,6 @@
 </head>
 <body>
     <div id="root"></div>
-    <!-- Carga del punto de entrada como módulo ES6 -->
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>

@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserData, NutritionPlan, QuestionnaireData } from "../types";
 
@@ -22,14 +23,20 @@ export const calculateTDEE = (data: UserData): number => {
 };
 
 /**
- * Genera el plan nutricional utilizando gemini-3-flash-preview para velocidad y precisión.
+ * Genera el plan nutricional utilizando gemini-3-flash-preview.
  */
 export const generateNutritionPlan = async (
   userData: UserData, 
   healthData: QuestionnaireData
 ): Promise<NutritionPlan> => {
-  // Inicialización dentro de la función para asegurar que el API Key esté disponible en el contexto de ejecución.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Verificación de seguridad de la API Key antes de instanciar
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("ERROR_CONFIG: La clave de API de Gemini no está configurada en el entorno (process.env.API_KEY).");
+  }
+
+  // Inicialización siguiendo las directrices: new GoogleGenAI({ apiKey: process.env.API_KEY })
+  const ai = new GoogleGenAI({ apiKey });
   
   const tdee = calculateTDEE(userData);
   const targetKcalPerMeal = Math.round(tdee / userData.mealCount);
@@ -40,20 +47,20 @@ export const generateNutritionPlan = async (
   REGLAS DE REPARTO CALÓRICO (CRÍTICO):
   1. EQUILIBRIO: Debes repartir las ${tdee} kcal de forma equilibrada entre las ${userData.mealCount} comidas.
   2. OBJETIVO POR COMIDA: Cada comida debe tener aproximadamente ${targetKcalPerMeal} kcal. 
-  3. DESVIACIÓN MÁXIMA: No permitas que una comida sea mucho más grande que otra. La diferencia máxima permitida entre la comida más grande y la más pequeña es del 15%.
-  4. TERMINOLOGÍA: Usa siempre el término "Comida" (ej: Comida 1, Comida 2...).
+  3. DESVIACIÓN MÁXIMA: La diferencia máxima permitida entre comidas es del 15%.
+  4. TERMINOLOGÍA: Usa el término "Comida".
 
   REGLAS DE CONTENIDO:
-  1. GRAMAJES EXACTOS: En el campo "description", lista cada alimento con su peso exacto en gramos (g). Ejemplo: "200g de pollo, 150g de arroz...".
-  2. MACRONUTRIENTES: Calcula los macros (P, C, G) para esos gramajes específicos como números enteros.
-  3. IDIOMA: Responde en Español. La "imageDescription" debe ser en Inglés técnico (ej: "grilled salmon with asparagus").`;
+  1. GRAMAJES EXACTOS: En el campo "description", lista cada alimento con su peso exacto en gramos (g).
+  2. MACRONUTRIENTES: Calcula los macros para esos gramajes como números enteros.
+  3. IDIOMA: Responde en Español. La "imageDescription" debe ser en Inglés técnico.`;
 
   const prompt = `GENERAR PLAN NUTRICIONAL EQUILIBRADO:
   - TDEE TOTAL: ${tdee} kcal
   - Objetivo: ${userData.goal}
-  - Número de Comidas: ${userData.mealCount} (Target: ~${targetKcalPerMeal} kcal por comida)
+  - Número de Comidas: ${userData.mealCount}
   - Atleta: ${userData.weight}kg, ${userData.height}cm, ${userData.age} años.
-  - Contexto: Estrés ${healthData.stressLevel}, Sueño ${healthData.sleepQuality}.`;
+  - Salud: Estrés ${healthData.stressLevel}, Sueño ${healthData.sleepQuality}.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -108,12 +115,13 @@ export const generateNutritionPlan = async (
       },
     });
 
+    // Acceso directo a .text según guías
     const planText = response.text;
     if (!planText) throw new Error("La IA no devolvió contenido.");
     
     const plan = JSON.parse(planText) as NutritionPlan;
     
-    // Forzar consistencia final
+    // Coherencia final
     plan.dailyTotals.calories = Math.round(tdee);
     plan.dailyTotals.tdee = Math.round(tdee);
     
@@ -129,7 +137,7 @@ export const generateNutritionPlan = async (
     
     return plan;
   } catch (error) {
-    console.error("Error crítico en generación de plan:", error);
+    console.error("Error crítico en generación:", error);
     throw error;
   }
 };
