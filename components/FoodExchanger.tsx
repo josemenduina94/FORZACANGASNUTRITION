@@ -99,7 +99,7 @@ const FoodExchanger: React.FC = () => {
             <div className="flex justify-between items-center mb-10">
               <div className="flex items-center gap-3">
                 <Settings2 className="text-red-500" size={20} />
-                <h3 className="text-xl font-black uppercase italic text-white">Configuración</h3>
+                <h3 className="text-xl font-black uppercase italic text-white">Mi alimento</h3>
               </div>
               {selectedFood && (
                 <button onClick={() => setSelectedFood(null)} className="text-zinc-600 hover:text-red-500 transition-colors">

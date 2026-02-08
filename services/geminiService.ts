@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserData, NutritionPlan, QuestionnaireData } from "../types";
 
@@ -55,18 +56,18 @@ export const generateNutritionPlan = async (
   IMPORTANTE: Todos los valores numéricos de macronutrientes y calorías deben ser números ENTEROS (redondeados), sin decimales. ABSOLUTAMENTE NINGÚN DECIMAL.
   Usa un tono profesional, motivador y directo.`;
 
-  const prompt = `GENERAR PROTOCOLO NUTRICIONAL ELITE PARA EL SIGUIENTE PERFIL:
-  - TDEE CALCULADO (OBJETIVO): ${tdee} kcal
-  - Objetivo del Atleta: ${userData.goal}
-  - Peso: ${userData.weight}kg, Altura: ${userData.height}cm, Edad: ${userData.age}
-  - Número de Comidas: ${userData.mealCount}
-  - Estrés percibido: ${healthData.stressLevel}, Calidad de sueño: ${healthData.sleepQuality}
-  
-  REGLAS ESTRICTAS PARA EL JSON:
-  1. dailyTotals.calories DEBE ser exactamente ${tdee}.
-  2. La suma de las calorías de todas las comidas DEBE ser igual a ${tdee}.
-  3. No uses decimales en ningún valor numérico de macros o calorías.
-  4. Nombres de platos realistas (gastronomía saludable) con descripción de ingredientes.`;
+  const prompt = `GENERAR PROTOCOLO NUTRICIONAL:
+  - TDEE: ${tdee} kcal
+  - Objetivo: ${userData.goal}
+  - Perfil: Peso ${userData.weight}kg, Altura ${userData.height}cm, Edad ${userData.age}
+  - Estrés: ${healthData.stressLevel}, Sueño: ${healthData.sleepQuality}
+
+  REGLAS PARA EL JSON:
+  1. Incluye un campo "image" para cada comida.
+  2. La URL debe ser exactamente así: https://images.unsplash.com/photo-[ID]?auto=format&fit=crop&q=80&w=800
+  3. Usa IDs de Unsplash reales de comida saludable (ej: 1546065126-d1d87ee09b7a para avena, 1467003909585-2f8a72700288 para pollo).
+  4. El resto de campos (name, description, macros) deben ser coherentes y sumar el TDEE de ${tdee} kcal.
+  5. dailyTotals.calories DEBE ser exactamente ${tdee}.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -85,6 +86,7 @@ export const generateNutritionPlan = async (
                 properties: {
                   name: { type: Type.STRING },
                   description: { type: Type.STRING },
+                  image: { type: Type.STRING },
                   macros: {
                     type: Type.OBJECT,
                     properties: {
@@ -96,7 +98,7 @@ export const generateNutritionPlan = async (
                     required: ["protein", "carbs", "fats", "calories"],
                   }
                 },
-                required: ["name", "description", "macros"]
+                required: ["name", "description", "image", "macros"]
               }
             },
             dailyTotals: {

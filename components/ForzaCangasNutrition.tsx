@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NutritionPlan, Meal } from '../types';
 import { Download } from 'lucide-react';
@@ -8,20 +9,9 @@ interface ForzaCangasNutritionProps {
   isLoading: boolean;
 }
 
-const cleanNameForURL = (name: string) => {
-  return name
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // Eliminar tildes
-    .replace(/[^a-z0-9\s]/g, "")    // Eliminar caracteres especiales
-    .replace(/\s+/g, "-");          // Espacios por guiones
-};
-
 const MealCard: React.FC<{ meal: Meal; index: number }> = ({ meal, index }) => {
-  const cleanName = cleanNameForURL(meal.name);
-  const imageUrl = `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=800&q=${cleanName}`;
   const fallbackUrl = 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=800';
+  const imageUrl = meal.image || fallbackUrl;
 
   return (
     <div className="bg-zinc-900 rounded-[2.5rem] border border-white/5 overflow-hidden flex flex-col h-full shadow-2xl group hover:border-red-500/20 transition-all">
