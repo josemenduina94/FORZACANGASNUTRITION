@@ -2,62 +2,74 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { UserData, NutritionPlan, QuestionnaireData } from "../types";
 
 /**
- * DETECTOR DE API KEY HÍBRIDO
- * Imprescindible para que funcione en el navegador (Vercel) y en AI Studio.
+ * Función de detección de llave para Vercel y AI Studio.
+ * Soporta prefijo VITE_ para compatibilidad con bundlers de frontend.
  */
 const getApiKey = (): string => {
-  // @ts-ignore - Prioridad Vercel/Vite
+  // @ts-ignore
   const viteKey = typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY;
   if (viteKey) return viteKey;
-
-  // Respaldo para AI Studio/Node
+  
+  // Respaldo para variables de entorno estándar
   if (typeof process !== 'undefined' && process.env?.API_KEY) {
     return process.env.API_KEY;
   }
+  
   return "";
 };
 
+/**
+ * Cálculo de TDEE basado en biometría
+ */
 export const calculateTDEE = (data: UserData): number => {
-  let bmr: number;
-  if (data.gender === 'masculino') {
-    bmr = 88.362 + (13.397 * data.weight) + (4.799 * data.height) - (5.677 * data.age);
-  } else {
-    bmr = 447.593 + (9.247 * data.weight) + (3.098 * data.height) - (4.330 * data.age);
-  }
+  let bmr = data.gender === 'masculino' 
+    ? 88.362 + (13.397 * data.weight) + (4.799 * data.height) - (5.677 * data.age)
+    : 447.593 + (9.247 * data.weight) + (3.098 * data.height) - (4.330 * data.age);
+  
   const maintenance = bmr * data.activityLevel;
   const adjustment = data.goal === 'Pérdida de Grasa' ? -500 : (data.goal === 'Ganancia Muscular' ? 300 : 0);
+  
   return Math.round(maintenance + adjustment);
 };
 
+/**
+ * Genera el plan nutricional utilizando gemini-3-flash-preview.
+ */
 export const generateNutritionPlan = async (
   userData: UserData, 
   healthData: QuestionnaireData
 ): Promise<NutritionPlan> => {
   
-  const apiKey = getApiKey();
-  if (!apiKey) throw new Error("ERROR_CONFIG: No se encontró la API KEY. Verifica las variables de entorno.");
+  const key = getApiKey();
+  if (!key) throw new Error("API KEY no encontrada. Verifica que VITE_GEMINI_API_KEY esté configurada en Vercel.");
 
-  const genAI = new GoogleGenAI(apiKey);
+  // Inicialización siguiendo guías oficiales
+  const ai = new GoogleGenAI({ apiKey: key });
   const tdee = calculateTDEE(userData);
-  const targetKcalPerMeal = Math.round(tdee / userData.mealCount);
 
-  // AQUÍ ELIGES EL MODELO: 
-  // 'gemini-1.5-flash' (Estable) o 'gemini-3-flash-preview' (El que te pide AI Studio)
-  const model = genAI.getGenerativeModel({ 
-    model: 'gemini-1.5-flash', 
-    systemInstruction: `Eres el Nutricionista Jefe de "Forza Cangas Nutrition". 
-    Genera un plan de ${tdee} kcal dividido en ${userData.mealCount} comidas. 
-    REGLAS: Cada comida ~${targetKcalPerMeal} kcal, gramajes exactos en gramos, sin decimales.
-    Respuesta estrictamente en JSON.`
-  });
+  const systemInstruction = `Actúa como Nutricionista Jefe de "Forza Cangas Nutrition".
+  Genera un plan de ${tdee} kcal para un atleta de ${userData.weight}kg con objetivo ${userData.goal}.
+  Distribuye en ${userData.mealCount} comidas equilibradas.
+  
+  REGLAS ESTRICTAS:
+  - Responde ÚNICAMENTE en formato JSON.
+  - Indica gramajes exactos en gramos (g) para cada alimento en la descripción.
+  - Los macros deben ser números enteros (sin decimales).
+  - El campo "imageDescription" debe estar en Inglés técnico.`;
+
+  const prompt = `Generar protocolo nutricional:
+  - Objetivo: ${userData.goal}
+  - Peso Atleta: ${userData.weight}kg
+  - TDEE Objetivo: ${tdee} kcal
+  - Comidas: ${userData.mealCount}
+  - Salud: Estrés ${healthData.stressLevel}, Sueño ${healthData.sleepQuality}.`;
 
   try {
-    const result = await model.generateContent({
-      contents: [{ 
-        role: "user", 
-        parts: [{ text: `Generar protocolo para atleta de ${userData.weight}kg, objetivo ${userData.goal}.` }] 
-      }],
-      generationConfig: {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        systemInstruction,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -105,20 +117,20 @@ export const generateNutritionPlan = async (
       },
     });
 
-    const response = await result.response;
-    const planText = response.text(); 
-    
+    // .text es una propiedad, no un método.
+    const planText = response.text;
     if (!planText) throw new Error("La IA devolvió un resultado vacío.");
     
+    // Parseo y limpieza de seguridad
     const plan = JSON.parse(planText) as NutritionPlan;
     
-    // Sincronización final de datos
-    plan.dailyTotals.calories = Math.round(tdee);
+    // Sincronización final de datos para asegurar exactitud matemática
     plan.dailyTotals.tdee = Math.round(tdee);
+    plan.dailyTotals.calories = Math.round(tdee);
     
     return plan;
   } catch (error) {
-    console.error("Error en geminiService:", error);
+    console.error("Error en la generación de nutrición:", error);
     throw error;
   }
 };
