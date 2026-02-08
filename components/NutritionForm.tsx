@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { UserData, QuestionnaireData } from '../types';
 import Questionnaire from './Questionnaire';
@@ -99,7 +98,7 @@ const NutritionForm: React.FC<NutritionFormProps> = ({ onSubmit, isLoading }) =>
             disabled={isLoading}
             className={`w-full py-6 ${isLoading ? 'bg-zinc-700' : 'bg-red-500 hover:bg-red-600'} text-white font-black rounded-2xl text-xl transition-all transform hover:scale-[1.01] shadow-2xl uppercase italic tracking-tighter flex items-center justify-center gap-4`}
           >
-            {isLoading ? 'ANALIZANDO BIOMETRÍA...' : 'GENERAR PLAN FORZA CANGAS NUTRITION'}
+            {isLoading ? 'ANALIZANDO BIOMETRÍA...' : 'GENERAR PLAN DE COMIDAS FORZA'}
           </button>
         </form>
       </div>
