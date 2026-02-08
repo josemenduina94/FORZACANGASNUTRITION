@@ -4,24 +4,10 @@ import { UserData, NutritionPlan, QuestionnaireData } from "../types";
 
 /**
  * Según las directrices de Google GenAI SDK:
- * 1. La clave API debe obtenerse de process.env.API_KEY.
- * 2. Se añade compatibilidad con import.meta.env para entornos Vite/Vercel.
- * 3. Se debe usar la clase GoogleGenAI con un parámetro con nombre { apiKey }.
+ * 1. La clave API debe obtenerse exclusivamente de process.env.API_KEY.
+ * 2. Se debe usar la clase GoogleGenAI con el parámetro nombrado { apiKey }.
  */
-const getApiKey = (): string => {
-  // Intentar obtener de process.env (estándar del entorno de ejecución)
-  if (typeof process !== 'undefined' && process.env.API_KEY) {
-    return process.env.API_KEY;
-  }
-  // Fallback a import.meta.env (común en despliegues Vite/Vercel)
-  if (typeof (import.meta as any).env !== 'undefined' && (import.meta as any).env.VITE_GEMINI_API_KEY) {
-    return (import.meta as any).env.VITE_GEMINI_API_KEY;
-  }
-  return "";
-};
-
-const apiKey = getApiKey();
-const ai = new GoogleGenAI({ apiKey });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
  * Fórmula de Harris-Benedict (Revisión de Roza y Shizgal, 1984)
@@ -56,18 +42,12 @@ export const generateNutritionPlan = async (
   IMPORTANTE: Todos los valores numéricos de macronutrientes y calorías deben ser números ENTEROS (redondeados), sin decimales. ABSOLUTAMENTE NINGÚN DECIMAL.
   Usa un tono profesional, motivador y directo.`;
 
-  const prompt = `GENERAR PROTOCOLO NUTRICIONAL:
-  - TDEE: ${tdee} kcal
+  const prompt = `GENERAR PLAN NUTRICIONAL:
+  - TDEE OBJETIVO: ${tdee} kcal
   - Objetivo: ${userData.goal}
-  - Perfil: Peso ${userData.weight}kg, Altura ${userData.height}cm, Edad ${userData.age}
-  - Estrés: ${healthData.stressLevel}, Sueño: ${healthData.sleepQuality}
+  - Comidas: ${userData.mealCount}
 
-  REGLAS PARA EL JSON:
-  1. Incluye un campo "image" para cada comida.
-  2. La URL debe ser exactamente así: https://images.unsplash.com/photo-[ID]?auto=format&fit=crop&q=80&w=800
-  3. Usa IDs de Unsplash reales de comida saludable (ej: 1546065126-d1d87ee09b7a para avena, 1467003909585-2f8a72700288 para pollo).
-  4. El resto de campos (name, description, macros) deben ser coherentes y sumar el TDEE de ${tdee} kcal.
-  5. dailyTotals.calories DEBE ser exactamente ${tdee}.`;
+  IMPORTANTE: Para cada comida, rellena el campo "imageDescription" con una descripción técnica en inglés del plato (ejemplo: "grilled salmon with asparagus", "greek yogurt with walnuts"). No inventes URLs, solo describe el plato.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -86,7 +66,7 @@ export const generateNutritionPlan = async (
                 properties: {
                   name: { type: Type.STRING },
                   description: { type: Type.STRING },
-                  image: { type: Type.STRING },
+                  imageDescription: { type: Type.STRING },
                   macros: {
                     type: Type.OBJECT,
                     properties: {
@@ -98,7 +78,7 @@ export const generateNutritionPlan = async (
                     required: ["protein", "carbs", "fats", "calories"],
                   }
                 },
-                required: ["name", "description", "image", "macros"]
+                required: ["name", "description", "imageDescription", "macros"]
               }
             },
             dailyTotals: {
@@ -127,12 +107,9 @@ export const generateNutritionPlan = async (
     
     const plan = JSON.parse(planText) as NutritionPlan;
     
-    // Post-procesamiento de seguridad para garantizar coherencia y ausencia de decimales
+    // Post-procesamiento de seguridad
     plan.dailyTotals.calories = Math.round(tdee);
     plan.dailyTotals.tdee = Math.round(tdee);
-    plan.dailyTotals.protein = Math.round(plan.dailyTotals.protein);
-    plan.dailyTotals.carbs = Math.round(plan.dailyTotals.carbs);
-    plan.dailyTotals.fats = Math.round(plan.dailyTotals.fats);
     
     plan.meals = plan.meals.map(meal => ({
       ...meal,

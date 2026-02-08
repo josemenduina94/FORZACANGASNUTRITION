@@ -28,7 +28,7 @@ export interface WeightEntry {
 export interface Meal {
   name: string;
   description: string;
-  image?: string;
+  imageDescription: string;
   macros: {
     protein: number;
     carbs: number;

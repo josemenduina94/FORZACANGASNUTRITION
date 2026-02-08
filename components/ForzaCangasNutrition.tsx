@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NutritionPlan, Meal } from '../types';
 import { Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
@@ -11,7 +11,28 @@ interface ForzaCangasNutritionProps {
 
 const MealCard: React.FC<{ meal: Meal; index: number }> = ({ meal, index }) => {
   const fallbackUrl = 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=800';
-  const imageUrl = meal.image || fallbackUrl;
+  const [imageUrl, setImageUrl] = useState(fallbackUrl);
+
+  useEffect(() => {
+    // Clave API de Unsplash hardcodeada para pruebas en el entorno actual
+    const unsplashApiKey = "1v8avkDCUeUlgqPzeVnqQnDfH3fMHjhu--yrgw_smbw"; 
+
+    if (meal.imageDescription) {
+      const query = encodeURIComponent(meal.imageDescription);
+      const url = `https://api.unsplash.com/search/photos?query=${query}&per_page=1&client_id=${unsplashApiKey}`;
+
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data.results && data.results.length > 0) {
+            setImageUrl(data.results[0].urls.regular);
+          } else {
+            setImageUrl(fallbackUrl);
+          }
+        })
+        .catch(() => setImageUrl(fallbackUrl));
+    }
+  }, [meal.imageDescription, fallbackUrl]);
 
   return (
     <div className="bg-zinc-900 rounded-[2.5rem] border border-white/5 overflow-hidden flex flex-col h-full shadow-2xl group hover:border-red-500/20 transition-all">

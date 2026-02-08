@@ -1,6 +1,5 @@
-
-import React, { useState, useMemo } from 'react';
 import { Search, ArrowRightLeft, Database, Info, Settings2, Trash2 } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 
 interface Food {
   name: string;
@@ -94,7 +93,7 @@ const FoodExchanger: React.FC = () => {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-12">
-          {/* Panel de Configuración */}
+          {/* Panel Mi alimento */}
           <div className="bg-zinc-900/50 p-8 md:p-12 rounded-[2.5rem] border border-white/5 flex flex-col">
             <div className="flex justify-between items-center mb-10">
               <div className="flex items-center gap-3">
