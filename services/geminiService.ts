@@ -2,13 +2,13 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { UserData, NutritionPlan, QuestionnaireData } from "../types";
 
 /**
- * Inicialización siguiendo las directrices de Google GenAI SDK.
- * Se utiliza exclusivamente process.env.API_KEY.
+ * Initialization following strictly the @google/genai guidelines.
+ * The API key is obtained exclusively from process.env.API_KEY.
  */
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
- * Fórmula de Harris-Benedict revisada
+ * Revised Harris-Benedict Formula (Roza and Shizgal, 1984)
  */
 export const calculateTDEE = (data: UserData): number => {
   let bmr: number;
@@ -17,10 +17,13 @@ export const calculateTDEE = (data: UserData): number => {
   } else {
     bmr = 447.593 + (9.247 * data.weight) + (3.098 * data.height) - (4.330 * data.age);
   }
+  
   const maintenance = bmr * data.activityLevel;
+  
   let adjustment = 0;
   if (data.goal === 'Pérdida de Grasa') adjustment = -500;
   if (data.goal === 'Ganancia Muscular') adjustment = 300;
+  
   return Math.round(maintenance + adjustment);
 };
 
@@ -29,26 +32,26 @@ export const generateNutritionPlan = async (
   healthData: QuestionnaireData
 ): Promise<NutritionPlan> => {
   const tdee = calculateTDEE(userData);
+  const idealKcalPerMeal = Math.round(tdee / userData.mealCount);
   
   const systemInstruction = `Eres el Nutricionista Jefe de "Forza Cangas Nutrition". 
-  Tu misión es diseñar planes de alimentación de alto rendimiento.
-
-  REGLAS CRÍTICAS DE BALANCE (EVITAR DESCOMPENSACIÓN):
-  1. REPARTO EQUITATIVO: El total de ${tdee} kcal debe dividirse equitativamente entre las ${userData.mealCount} comidas. 
-  2. NINGUNA comida puede tener menos del 20% ni más del 30% del total calórico diario (salvo que el número de comidas sea muy bajo).
-  3. EVITA el error de poner una comida de 900kcal y otra de 200kcal. El objetivo es aprox ${Math.round(tdee / userData.mealCount)} kcal por comida.
-  4. GRAMAJES EXACTOS: En "description", especifica cada alimento con su PESO en gramos (g).
-  5. TERMINOLOGÍA: Usa siempre la palabra "Comida" para referirte a las ingestas.
-  6. RESPUESTA: Solo JSON puro.`;
-
-  const prompt = `GENERAR PROTOCOLO NUTRICIONAL ELITE:
-  - TDEE OBJETIVO: ${tdee} kcal
-  - Distribución ideal: ~${Math.round(tdee / userData.mealCount)} kcal por cada una de las ${userData.mealCount} comidas.
-  - Objetivo: ${userData.goal}
-  - Atleta: Peso ${userData.weight}kg, Altura ${userData.height}cm, Edad ${userData.age} años.
-  - Estrés: ${healthData.stressLevel}, Sueño: ${healthData.sleepQuality}.
+  Tu especialidad es la nutrición de precisión para atletas de élite.
   
-  Crea un plan realista, con ingredientes comunes pero efectivos (pollo, arroz, aguacate, huevos, avena, etc.) y cantidades precisas.`;
+  REGLAS MANDATORIAS DE DISEÑO:
+  1. REPARTO EQUILIBRADO: El total de ${tdee} kcal DEBE distribuirse de forma lógica entre las ${userData.mealCount} comidas. 
+     Cada comida debe rondar las ${idealKcalPerMeal} kcal (+/- 10%). Evita descompensaciones extremas (no pongas una comida de 900kcal y otra de 200kcal).
+  2. GRAMAJES EXACTOS: Cada ingrediente en el campo "description" DEBE tener su peso exacto en gramos (ej: "200g de pechuga de pollo", "150g de arroz pesado en crudo"). Prohibido usar medidas vagas como "una porción" o "un plato".
+  3. MACRONUTRIENTES: Calcula los macros para esos gramajes específicos. Deben ser números ENTEROS.
+  4. TERMINOLOGÍA: Usa el término "Comida" para referirte a cada ingesta.
+  5. IDIOMA: Responde en Español, excepto el campo "imageDescription" que debe ir en Inglés técnico para búsqueda de imágenes.
+  6. FORMATO: Responde ÚNICAMENTE en JSON puro siguiendo el esquema proporcionado.`;
+
+  const prompt = `GENERAR PLAN NUTRICIONAL EQUILIBRADO:
+  - TDEE OBJETIVO: ${tdee} kcal
+  - Objetivo: ${userData.goal}
+  - Número de Comidas: ${userData.mealCount}
+  - Perfil del Atleta: Peso ${userData.weight}kg, Altura ${userData.height}cm, Edad ${userData.age} años.
+  - Factores de Salud: Estrés ${healthData.stressLevel}, Calidad de Sueño ${healthData.sleepQuality}.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -66,8 +69,8 @@ export const generateNutritionPlan = async (
                 type: Type.OBJECT,
                 properties: {
                   name: { type: Type.STRING },
-                  description: { type: Type.STRING, description: "Lista de ingredientes con gramajes exactos" },
-                  imageDescription: { type: Type.STRING, description: "Short technical description in English for image search" },
+                  description: { type: Type.STRING },
+                  imageDescription: { type: Type.STRING },
                   macros: {
                     type: Type.OBJECT,
                     properties: {
@@ -103,12 +106,13 @@ export const generateNutritionPlan = async (
       },
     });
 
+    // Access the text property directly (not a method call) as per guidelines.
     const planText = response.text;
     if (!planText) throw new Error("La IA no devolvió contenido.");
     
     const plan = JSON.parse(planText) as NutritionPlan;
     
-    // Forzar redondeo final y coherencia con el cálculo base
+    // Ensure final consistency and rounding
     plan.dailyTotals.calories = Math.round(tdee);
     plan.dailyTotals.tdee = Math.round(tdee);
     
