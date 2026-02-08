@@ -10,7 +10,6 @@ import NutritionForm from './components/NutritionForm';
 import ForzaCangasNutrition from './components/ForzaCangasNutrition';
 import FoodExchanger from './components/FoodExchanger';
 import ProgressTracker from './components/ProgressTracker';
-import Pricing from './components/Pricing';
 import Footer from './components/Footer';
 import { UserData, NutritionPlan, QuestionnaireData } from './types';
 import { generateNutritionPlan } from './services/geminiService';
@@ -63,8 +62,6 @@ const App: React.FC = () => {
         <FoodExchanger />
 
         <ProgressTracker />
-
-        <Pricing />
 
         {/* Final CTA */}
         <section className="py-32 relative overflow-hidden bg-zinc-950">

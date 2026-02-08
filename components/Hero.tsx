@@ -33,12 +33,6 @@ const Hero: React.FC = () => {
           >
             Obtener mi Nutricion IA
           </button>
-          <button 
-            onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
-            className="px-12 py-6 bg-white/5 text-white font-black rounded-2xl text-xl hover:bg-white/10 transition-all border border-white/10 uppercase italic tracking-tighter"
-          >
-            Ver Tarifas Elite
-          </button>
         </div>
       </div>
     </section>

@@ -28,7 +28,6 @@ const Navbar: React.FC = () => {
               <button onClick={() => scrollTo('servicios')} className="text-zinc-400 hover:text-white text-xs font-black uppercase tracking-widest transition-colors">Servicios</button>
               <button onClick={() => scrollTo('educacion')} className="text-zinc-400 hover:text-white text-xs font-black uppercase tracking-widest transition-colors">Educación</button>
               <button onClick={() => scrollTo('nutrition-form')} className="text-zinc-400 hover:text-white text-xs font-black uppercase tracking-widest transition-colors">Nutricion IA</button>
-              <button onClick={() => scrollTo('pricing')} className="text-zinc-400 hover:text-white text-xs font-black uppercase tracking-widest transition-colors">Tarifas</button>
               <button 
                 onClick={() => scrollTo('nutrition-form')} 
                 className="bg-red-500 text-white px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
