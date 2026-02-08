@@ -10,8 +10,7 @@ import { UserData, NutritionPlan, QuestionnaireData } from "../types";
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
- * Fórmula de Harris-Benedict (Revisión de Roza y Shizgal, 1984)
- * Calcula la Tasa Metabólica Basal y aplica el factor de actividad y objetivo.
+ * Fórmula de Harris-Benedict
  */
 export const calculateTDEE = (data: UserData): number => {
   let bmr: number;
@@ -39,7 +38,7 @@ export const generateNutritionPlan = async (
   const systemInstruction = `Eres el Nutricionista Jefe de Forza Cangas Nutrition. 
   Tu misión es generar planes de alimentación basados en DATOS MATEMÁTICOS EXACTOS para atletas de élite.
   REGLA DE ORO: El total de calorías diario DEBE ser exactamente ${tdee}.
-  IMPORTANTE: Todos los valores numéricos de macronutrientes y calorías deben ser números ENTEROS (redondeados), sin decimales. ABSOLUTAMENTE NINGÚN DECIMAL.
+  IMPORTANTE: Todos los valores numéricos de macronutrientes y calorías deben ser números ENTEROS (redondeados).
   Usa un tono profesional, motivador y directo.`;
 
   const prompt = `GENERAR PLAN NUTRICIONAL:
@@ -51,7 +50,7 @@ export const generateNutritionPlan = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-flash-preview', // Modelo actualizado para evitar errores 404 y cumplir directrices
       contents: prompt,
       config: {
         systemInstruction,
@@ -102,12 +101,12 @@ export const generateNutritionPlan = async (
       },
     });
 
-    const planText = response.text;
+    const planText = response.text; // 'text' es una propiedad, no un método.
     if (!planText) throw new Error("La IA no devolvió contenido.");
     
     const plan = JSON.parse(planText) as NutritionPlan;
     
-    // Post-procesamiento de seguridad
+    // Post-procesamiento de seguridad para forzar números enteros
     plan.dailyTotals.calories = Math.round(tdee);
     plan.dailyTotals.tdee = Math.round(tdee);
     
